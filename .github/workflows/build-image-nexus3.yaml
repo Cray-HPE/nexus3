@@ -1,6 +1,11 @@
 name: Build sonatype/nexus3 container image
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/build-image-nexus3.yaml
   schedule:
     - cron: "0 0 * * 1"
   workflow_dispatch:
@@ -38,4 +43,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/Cray-HPE/nexus/sonatype-nexus3:${{ steps.read_version.output.version }}
+          tags: ghcr.io/cray-hpe/nexus/sonatype/nexus3:${{ steps.read_version.outputs.version }}
