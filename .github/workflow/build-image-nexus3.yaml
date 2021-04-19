@@ -1,0 +1,41 @@
+name: Build sonatype/nexus3 container image
+
+on:
+  schedule:
+    - cron: "0 0 * * 1"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout tools repo
+        uses: actions/checkout@v2
+        with:
+          repository: sonatype/docker-nexus3
+
+      - name: Read version
+        id: read_version
+        shell: bash
+        run: echo "::set-output name=version::$(grep -e '^ARG NEXUS_VERSION=' Dockerfile | sed -e 's/^ARG NEXUS_VERSION=//' -e 's/-.*$//')"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/Cray-HPE/nexus/sonatype-nexus3:${{ steps.read_version.output.version }}
