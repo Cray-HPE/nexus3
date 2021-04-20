@@ -5,16 +5,15 @@ name: cray-nexus
 version: 1.0.0-alpha.1
 appVersion: 3.30.0
 description: Sonatype Nexus is an open source repository manager
-home: https://github.com/Cray-HPE/nexus
+home: https://github.com/Cray-HPE/nexus3
 keywords:
   - nexus
   - repository
   - registry
 sources:
   - https://github.com/sonatype/nexus-public
-  - https://github.com/travelaudience/docker-nexus
-  - https://github.com/travelaudience/kubernetes-nexus
-  - https://github.com/travelaudience/docker-nexus-backup
+  - https://github.com/sonatype/docker-nexus3
+  - https://github.com/Oteemo/charts/tree/master/charts/sonatype-nexus
 maintainers:
   - name: Zachary Crisler
     email: zachary.crisler@hpe.com
