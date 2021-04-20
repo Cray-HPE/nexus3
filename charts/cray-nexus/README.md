@@ -15,9 +15,8 @@ Sonatype Nexus is an open source repository manager
 ## Source Code
 
 * <https://github.com/sonatype/nexus-public>
-* <https://github.com/travelaudience/docker-nexus>
-* <https://github.com/travelaudience/kubernetes-nexus>
-* <https://github.com/travelaudience/docker-nexus-backup>
+* <https://github.com/sonatype/docker-nexus3>
+* <https://github.com/Oteemo/charts/tree/master/charts/sonatype-nexus>
 
 ## Requirements
 
