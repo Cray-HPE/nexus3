@@ -1,0 +1,10 @@
+# See https://github.com/helm/chart-testing#configuration
+remote: origin
+target-branch: main
+chart-dirs:
+  - charts
+chart-repos:
+  - bitnami=https://charts.bitnami.com/bitnami
+  - oteemo=https://oteemo.github.io/charts
+helm-extra-args: --timeout 600s
+debug: true
