@@ -43,4 +43,6 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/cray-hpe/nexus/sonatype/nexus3:${{ steps.read_version.outputs.version }}
+          tags: |
+            ghcr.io/cray-hpe/nexus3:latest
+            ghcr.io/cray-hpe/nexus3:${{ steps.read_version.outputs.version }}
