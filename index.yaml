@@ -66,4 +66,36 @@ entries:
     urls:
     - https://github.com/Cray-HPE/nexus3/releases/download/cray-nexus-1.0.0-alpha.1/cray-nexus-1.0.0-alpha.1.tgz
     version: 1.0.0-alpha.1
-generated: "2021-04-20T14:41:30.149428966Z"
+  - annotations:
+      artifacthub.io/images: |
+        - name: sonatype/nexus
+          image: ghcr.io/cray-hpe/nexus3:3.30.0
+        - name: cray/nexus-setup
+          image: ghcr.io/cray-hpe/nexus3-setup:0.5.2
+      artifacthub.io/license: MIT
+    apiVersion: v2
+    appVersion: 3.30.0
+    created: "2021-04-20T14:46:23.165388943Z"
+    dependencies:
+    - name: sonatype-nexus
+      repository: https://oteemo.github.io/charts/
+      version: 2.3.1
+    description: Sonatype Nexus is an open source repository manager
+    digest: 4b9ab56203d700474c7f3e0cca4a2962ce1e62682c8bc7fa9a886ac33d3c95eb
+    home: https://github.com/Cray-HPE/nexus3
+    keywords:
+    - nexus
+    - repository
+    - registry
+    maintainers:
+    - email: zachary.crisler@hpe.com
+      name: Zachary Crisler
+    name: cray-nexus
+    sources:
+    - https://github.com/sonatype/nexus-public
+    - https://github.com/sonatype/docker-nexus3
+    - https://github.com/Oteemo/charts/tree/master/charts/sonatype-nexus
+    urls:
+    - https://github.com/Cray-HPE/nexus3/releases/download/cray-nexus-1.0.0-alpha.1/cray-nexus-1.0.0-alpha.1.tgz
+    version: 1.0.0-alpha.1
+generated: "2021-04-20T14:46:23.165414643Z"
