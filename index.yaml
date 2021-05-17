@@ -31,7 +31,7 @@ entries:
     - https://github.com/sonatype/docker-nexus3
     - https://github.com/Oteemo/charts/tree/master/charts/sonatype-nexus
     urls:
-    - https://github.com/Cray-HPE/nexus3/releases/download/cray-nexus-1.0.0-alpha.1/cray-nexus-1.0.0-alpha.1.tgz
     - https://api.github.com/repos/Cray-HPE/nexus3/releases/assets/35476692
+    - https://github.com/Cray-HPE/nexus3/releases/download/cray-nexus-1.0.0-alpha.1/cray-nexus-1.0.0-alpha.1.tgz
     version: 1.0.0-alpha.1
 generated: "2021-04-20T14:49:25.405085818Z"
