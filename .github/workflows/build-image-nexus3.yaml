@@ -18,12 +18,12 @@ jobs:
       - name: Checkout tools repo
         uses: actions/checkout@v2
         with:
-          repository: sonatype/docker-nexus3
+          repository: Cray-HPE/nexus3
 
       - name: Read version
         id: read_version
         shell: bash
-        run: echo "::set-output name=version::$(grep -e '^ARG NEXUS_VERSION=' Dockerfile | sed -e 's/^ARG NEXUS_VERSION=//' -e 's/-.*$//')"
+        run: echo "::set-output name=version::$(grep -e '^FROM sonatype/nexus3:' Dockerfile | sed -e 's/^FROM sonatype\/nexus3://g' -e 's/-.*$//')-csm"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
