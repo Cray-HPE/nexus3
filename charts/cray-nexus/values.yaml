@@ -24,6 +24,21 @@ sonatype-nexus:
       value: "-Xms4G -Xmx4G -XX:MaxDirectMemorySize=39158M -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap"
     - name: NEXUS_SECURITY_RANDOMPASSWORD
       value: "false"
+    - name: KC_AUTH_URL
+      valueFrom:
+        secretKeyRef:
+          key: endpoint
+          name: system-nexus-client-auth
+    - name: KC_CLIENT_ID
+      valueFrom:
+        secretKeyRef:
+          key: client-id
+          name: system-nexus-client-auth
+    - name: KC_CLIENT_CRED
+      valueFrom:
+        secretKeyRef:
+          key: client-secret
+          name: system-nexus-client-auth
     resources:
       requests:
         cpu: "4"
@@ -44,10 +59,19 @@ sonatype-nexus:
       helm.sh/resource-policy: keep
 
   deployment:
+    postStart:
+      command: ["/usr/local/bin/initialize-keycloak-plugin"]
     additionalVolumes:
     - name: nexus-config
       configMap:
         name: nexus-config
+    - configMap:
+        defaultMode: 420
+        name: cray-configmap-ca-public-key
+      name: ca-public-key
+    additionalVolumeMounts:
+    - mountPath: /ca_public_key
+      name: ca-public-key
     initContainers:
     - name: init-data
       image: ghcr.io/cray-hpe/nexus3-setup:0.5.2
@@ -67,7 +91,8 @@ sonatype-nexus:
         name: nexus-data
       - mountPath: /nexus-config
         name: nexus-config
-
+      - mountPath: /ca_public_key
+        name: ca-public-key
   service:
     enabled: true
     name: nexus

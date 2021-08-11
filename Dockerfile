@@ -12,5 +12,18 @@ FROM sonatype/nexus3:3.25.0
 
 COPY keycloak-plugin/nexus3-keycloak-plugin-0.5.0-bundle.kar \
      /opt/sonatype/nexus/deploy
+#COPY keycloak-plugin/nexus3-keycloak-plugin-0.6.0-SNAPSHOT-bundle.kar \
+#     /opt/sonatype/nexus/deploy
 
+COPY keycloak-plugin/initialize-keycloak-plugin /usr/local/bin
 COPY keycloak-plugin/generate-credential-config /usr/local/bin
+
+# The plugin requires an updated JVM cacerts file and credential
+# which must be referenced from nexus.vmoptions.  The nexus user
+# will need to modify the file so it makes sense that nexus
+# should just own the file.
+USER root
+RUN chown nexus:nexus /opt/sonatype/nexus/bin/nexus.vmoptions
+RUN yum install -y openssl
+USER nexus
+COPY keycloak-plugin/configure-jvm-cacerts /usr/local/bin

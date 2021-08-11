@@ -1,0 +1,34 @@
+#!/bin/sh
+
+# Copyright 2021 Hewlett Packard Enterprise Development LP
+
+# Create the Keycloak plugin jvm cacerts file so that the
+# NXRM3 jvm can make a TLS connection to Keycloak.
+
+# Generate a new cacerts from the CA file.
+cacerts_file=/nexus-data/cacerts
+rm -f $cacerts_file
+keypass=$(openssl rand -base64 32)
+crt=/ca_public_key/certificate_authority.crt
+while [ ! -f $crt ]; do
+  echo "Waiting on $crt to be mounted.";
+  sleep 5;
+done
+echo "Found ${crt}. Starting keytool import."
+
+keytool -importcert -file /ca_public_key/certificate_authority.crt \
+ -alias nexus3 \
+ -keystore $cacerts_file \
+ -storepass $keypass \
+ -keypass $keypass \
+ -noprompt
+
+# Tell the Nexus JVM about the cacert.
+vm_opts=/opt/sonatype/nexus/bin/nexus.vmoptions
+while [ ! -f $vm_opts ]; do
+  echo "Waiting on $vm_opts to be available.";
+  sleep 5;
+done
+echo "Found ${vm_opts}. Updating with cert info."
+echo "-Djavax.net.ssl.trustStore=$cacerts_file" >> $vm_opts
+echo "-Djavax.net.ssl.trustStorePassword=$keypass" >> $vm_opts

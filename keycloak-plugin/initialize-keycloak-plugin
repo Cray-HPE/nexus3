@@ -1,0 +1,8 @@
+#!/bin/sh
+# Copyright 2021 Hewlett Packard Enterprise Development LP
+
+# Initialize any configuraiton needed by the Nexus Keycloak plugin. 
+
+set -ex
+/usr/local/bin/generate-credential-config
+/usr/local/bin/configure-jvm-cacerts
