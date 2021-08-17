@@ -2,10 +2,11 @@
 
 # Copyright 2021 Hewlett Packard Enterprise Development LP
 
-# Create the Keycloak plugin jvm cacerts file so that the
-# NXRM3 jvm can make a TLS connection to Keycloak.
-
-# Generate a new cacerts from the CA file.
+# Copy and append the Shasta CA to the Nexus JVM cacerts
+# so that it will be able to contact Keycloak over TLS.
+# This script runs post pod startup as the nexus user but
+# just prior to nexus starting so the JVM will pick up the
+# nexus.vmoptions configuration.
 cacerts_file=/nexus-data/cacerts
 rm -f $cacerts_file
 keypass=$(openssl rand -base64 32)
@@ -16,12 +17,19 @@ while [ ! -f $crt ]; do
 done
 echo "Found ${crt}. Starting keytool import."
 
+# Begin with the default so that we have the existing CAs.
+cp /usr/lib/jvm/java-1.8.0/jre/lib/security/cacerts $cacerts_file
+chmod 644 $cacerts_file
+
+# Import the Shasta CA.
 keytool -importcert -file /ca_public_key/certificate_authority.crt \
- -alias nexus3 \
+ -alias cray-hpe-nexus3 \
  -keystore $cacerts_file \
- -storepass $keypass \
- -keypass $keypass \
+ -storepass changeit \
  -noprompt
+
+# Change the default keystore password.
+keytool -storepasswd -new $keypass -keystore $cacerts_file -storepass changeit
 
 # Tell the Nexus JVM about the cacert.
 vm_opts=/opt/sonatype/nexus/bin/nexus.vmoptions
