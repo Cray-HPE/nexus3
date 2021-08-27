@@ -17,11 +17,11 @@ sonatype-nexus:
 
   nexus:
     imageName: ghcr.io/cray-hpe/nexus3
-    imageTag: 3.30.0
+    imageTag: 3.25.0-csm
     env:
     # See https://help.sonatype.com/repomanager3/installation/system-requirements#SystemRequirements-Memory
-    - name: install4jAddVmParams
-      value: "-Xms4G -Xmx4G -XX:MaxDirectMemorySize=39158M -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap"
+    - name: INSTALL4J_ADD_VM_PARAMS
+      value: "-Xms4G -Xmx4G -XX:MaxDirectMemorySize=39158M -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -Djavax.net.ssl.trustStore=/nexus-data/cacerts"
     - name: NEXUS_SECURITY_RANDOMPASSWORD
       value: "false"
     - name: KC_AUTH_URL

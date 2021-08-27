@@ -4,39 +4,29 @@
 
 # Copy and append the Shasta CA to the Nexus JVM cacerts
 # so that it will be able to contact Keycloak over TLS.
-# This script runs post pod startup as the nexus user but
-# just prior to nexus starting so the JVM will pick up the
-# nexus.vmoptions configuration.
+# This script runs post pod startup as the nexus user
+# and updates the nexus.vmoptions configuration.
 cacerts_file=/nexus-data/cacerts
 rm -f $cacerts_file
-keypass=$(openssl rand -base64 32)
-crt=/ca_public_key/certificate_authority.crt
-while [ ! -f $crt ]; do
-  echo "Waiting on $crt to be mounted.";
+crt_dir=/ca_public_key
+while [ ! -d $crt_dir ]; do
+  echo "Waiting on $crt_dir to be mounted.";
   sleep 5;
 done
-echo "Found ${crt}. Starting keytool import."
+echo "Found ${crt_dir}. Starting keytool import."
 
 # Begin with the default so that we have the existing CAs.
 cp /usr/lib/jvm/java-1.8.0/jre/lib/security/cacerts $cacerts_file
 chmod 644 $cacerts_file
 
-# Import the Shasta CA.
-keytool -importcert -file /ca_public_key/certificate_authority.crt \
- -alias cray-hpe-nexus3 \
- -keystore $cacerts_file \
- -storepass changeit \
- -noprompt
-
-# Change the default keystore password.
-keytool -storepasswd -new $keypass -keystore $cacerts_file -storepass changeit
-
-# Tell the Nexus JVM about the cacert.
-vm_opts=/opt/sonatype/nexus/bin/nexus.vmoptions
-while [ ! -f $vm_opts ]; do
-  echo "Waiting on $vm_opts to be available.";
-  sleep 5;
+# There exist multiple PEM files in the CA configmap (i.e. mounted here)
+# so we will import all to ensure a successful TLS handshake.
+for crt in $(ls $crt_dir); do
+  # Import the Shasta CA.
+  keytool -importcert -file $crt_dir/$crt \
+   -alias cray-hpe-$crt \
+   -keystore $cacerts_file \
+   -storepass changeit \
+   -noprompt
+ echo "Imported $crt"
 done
-echo "Found ${vm_opts}. Updating with cert info."
-echo "-Djavax.net.ssl.trustStore=$cacerts_file" >> $vm_opts
-echo "-Djavax.net.ssl.trustStorePassword=$keypass" >> $vm_opts
