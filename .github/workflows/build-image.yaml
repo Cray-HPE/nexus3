@@ -77,8 +77,8 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: cray-hpe/nexus3
-          build-args:
-            IMAGE: sonatype/nexus3:${{ matrix.ref }}
+          build-args: |
+            IMAGE=sonatype/nexus3:${{ matrix.ref }}
           push: true
           tags: |
             ghcr.io/cray-hpe/nexus3:${{ github.sha }}
