@@ -71,8 +71,9 @@ jobs:
       - name: Get sonatype/nexus3 release
         id: release
         shell: bash
-        #run: echo "::set-output name=release::$(docker inspect -f '{{ index .Config.Labels "release" }}' sonatype/nexus3:${{ matrix.ref }})"
-        run: echo "::set-output name=release::$(docker inspect sonatype/nexus3:${{ matrix.ref }} | jq -r '.[0] | .Config.Labels.release' )"
+        env:
+          IMAGE: sonatype/nexus3:${{ matrix.ref }}
+        run: echo "::set-output name=release::$(docker inspect -f '{{ index .Config.Labels "release" }}' "$IMAGE")"
 
       - name: Build nexus3:${{ steps.release.outputs.release }}
         uses: docker/build-push-action@v2
