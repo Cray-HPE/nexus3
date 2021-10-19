@@ -1,27 +1,35 @@
-name: Build sonatype/nexus3 container image
+name: Build nexus3 image
 
 on:
   push:
     branches:
       - main
     paths:
-      - .github/workflows/build-image-nexus3.yaml
+      - .github/workflows/build-image.yaml
   schedule:
-    - cron: "0 0 * * 1"
+    - cron: "0 0 * * *"
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ref:
+          - 3.25.0
+      fail-fast: false
     steps:
-
-      - name: Checkout tools repo
+      - name: Checkout
         uses: actions/checkout@v2
+        with:
+          path: cray-hpe/nexus3
 
-      - name: Read version
-        id: read_version
-        shell: bash
-        run: echo "::set-output name=version::$(grep -e '^FROM sonatype/nexus3:' Dockerfile | sed -e 's/^FROM sonatype\/nexus3://g' -e 's/-.*$//')-csm"
+      - name: Checkout sonatype/docker-nexus3
+        uses: actions/checkout@v2
+        with:
+          repository: sonatype/docker-nexus3
+          path: sonatype/docker-nexus3
+          ref: ${{ matrix.ref }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -31,8 +39,7 @@ jobs:
 
       - name: Install cosign
         uses: sigstore/cosign-installer@main
-        with:
-          cosign-release: 'v1.0.0'
+
       - name: Check cosign install
         run: cosign version
 
@@ -42,6 +49,7 @@ jobs:
           project_id: ${{ secrets.COSIGN_GCP_PROJECT_ID }}
           service_account_key: ${{ secrets.COSIGN_GCP_SA_KEY }}
           export_default_credentials: true
+
       - name: Use gcloud CLI
         run: gcloud info
 
@@ -52,20 +60,36 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build
+      - name: Build sonatype/nexus3:${{ matrix.ref }}
         uses: docker/build-push-action@v2
         with:
-          context: .
+          context: sonatype/docker-nexus3
+          push: false
+          tags: |
+            sonatype/nexus3:${{ matrix.ref }}
+
+      - name: Get sonatype/nexus3 release
+        id: release
+        shell: bash
+        run: echo "::set-output name=release::$(docker inspect -f '{{ index .Config.Labels "release" }}' sonatype/nexus3:${{ matrix.ref }})"
+
+      - name: Build nexus3:${{ steps.release.output.release }}
+        uses: docker/build-push-action@v2
+        with:
+          context: cray-hpe/nexus3
+          build-args:
+            IMAGE: sonatype/nexus3:${{ matrix.ref }}
           push: true
           tags: |
             ghcr.io/cray-hpe/nexus3:${{ github.sha }}
-            ghcr.io/cray-hpe/nexus3:${{ steps.read_version.outputs.version }}
+            ghcr.io/cray-hpe/nexus3:${{ steps.release.output.release }}
             ghcr.io/cray-hpe/nexus3:latest
 
-      - name: Sign
+      - name: Sign nexus3:${{ steps.release.output.release }}
         env:
           COSIGN_KEY: ${{ secrets.COSIGN_KEY }}
-          IMAGE_TAG: ${{ steps.read_version.outputs.version }}
+          IMAGE_TAG: ${{ steps.release.output.release }}
         run: |
           cosign sign -key $COSIGN_KEY -a GIT_HASH=$GITHUB_SHA ghcr.io/cray-hpe/nexus3:$GITHUB_SHA
           cosign sign -key $COSIGN_KEY -a GIT_TAG=$IMAGE_TAG ghcr.io/cray-hpe/nexus3:$IMAGE_TAG
+          cosign sign -key $COSIGN_KEY -a GIT_TAG=$IMAGE_TAG ghcr.io/cray-hpe/nexus3:latest
