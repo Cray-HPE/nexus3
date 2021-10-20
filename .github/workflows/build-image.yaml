@@ -48,12 +48,6 @@ jobs:
         with:
           driver-opts: network=host
 
-      - name: Setup Go
-        uses: actions/setup-go@v2
-
-      - name: Install crane
-        run: go install github.com/google/go-containerregistry/cmd/crane@latest
-
       - name: Install cosign
         uses: sigstore/cosign-installer@main
 
@@ -90,8 +84,10 @@ jobs:
         id: release
         shell: bash
         env:
-          IMAGE: localhost:5000/sonatype/nexus3@${{ steps.build-upstream.outputs.digest }}
-        run: echo "::set-output name=release::$(crane config "$IMAGE" | jq -r '.config.Labels.release')"
+          registry: localhost:5000
+          image: sonatype/nexus3
+          digest: ${{ steps.build-upstream.outputs.digest }}
+        run: echo "::set-output name=release::$(curl --silent --location "http://${registry}/v2/${image}/blobs/${digest}" | jq -r '.config.Labels.release')"
 
       - name: Build nexus3:${{ steps.release.outputs.release }}
         uses: docker/build-push-action@v2
