@@ -78,21 +78,24 @@ jobs:
           context: sonatype/docker-nexus3
           push: true
           tags: |
-            localhost:5000/sonatype/nexus3
+            localhost:5000/sonatype/nexus3:${{ matrix.ref }}
 
       - name: Get sonatype/nexus3 release
         id: release
         shell: bash
         env:
-          IMAGE: localhost:5000/sonatype/nexus3@${{ steps.build-upstream.outputs.digest }}
+          #IMAGE: localhost:5000/sonatype/nexus3@${{ steps.build-upstream.outputs.digest }}
+          IMAGE: localhost:5000/sonatype/nexus3:${{ matrix.ref }}
         run: echo "::set-output name=release::$(docker image inspect -f '{{ index .Config.Labels "release" }}' "$IMAGE")"
 
       - name: Build nexus3:${{ steps.release.outputs.release }}
         uses: docker/build-push-action@v2
         with:
           context: cray-hpe/nexus3
+          #build-args: |
+          #  IMAGE=localhost:5000/sonatype/nexus3@${{ steps.build-upstream.outputs.digest }}
           build-args: |
-            IMAGE=localhost:5000/sonatype/nexus3@${{ steps.build-upstream.outputs.digest }}
+            IMAGE=localhost:5000/sonatype/nexus3:${{ matrix.ref }}
           push: true
           tags: |
             ghcr.io/cray-hpe/nexus3:${{ github.sha }}
