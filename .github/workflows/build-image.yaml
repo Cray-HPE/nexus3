@@ -68,6 +68,8 @@ jobs:
           context: sonatype/docker-nexus3
           push: false
           load: true
+          tags: |
+            sonatype/nexus3
 
       - name: Get sonatype/nexus3 release
         id: release
