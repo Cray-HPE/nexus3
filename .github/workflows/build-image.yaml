@@ -48,6 +48,12 @@ jobs:
         with:
           driver-opts: network=host
 
+      - name: Setup Go
+        uses: actions/setup-go@v2
+
+      - name: Install crane
+        run: go install github.com/google/go-containerregistry/cmd/crane@latest
+
       - name: Install cosign
         uses: sigstore/cosign-installer@main
 
@@ -71,7 +77,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build sonatype/nexus3:${{ matrix.ref }}
+      - name: Build sonatype/nexus3
         id: build-upstream
         uses: docker/build-push-action@v2
         with:
@@ -84,18 +90,15 @@ jobs:
         id: release
         shell: bash
         env:
-          #IMAGE: localhost:5000/sonatype/nexus3@${{ steps.build-upstream.outputs.digest }}
-          IMAGE: localhost:5000/sonatype/nexus3:${{ matrix.ref }}
-        run: echo "::set-output name=release::$(docker image inspect -f '{{ index .Config.Labels "release" }}' "$IMAGE")"
+          IMAGE: localhost:5000/sonatype/nexus3@${{ steps.build-upstream.outputs.digest }}
+        run: echo "::set-output name=release::$(crane config "$IMAGE" | jq -r '.config.Labels.release')"
 
       - name: Build nexus3:${{ steps.release.outputs.release }}
         uses: docker/build-push-action@v2
         with:
           context: cray-hpe/nexus3
-          #build-args: |
-          #  IMAGE=localhost:5000/sonatype/nexus3@${{ steps.build-upstream.outputs.digest }}
           build-args: |
-            IMAGE=localhost:5000/sonatype/nexus3:${{ matrix.ref }}
+            IMAGE=localhost:5000/sonatype/nexus3@${{ steps.build-upstream.outputs.digest }}
           push: true
           tags: |
             ghcr.io/cray-hpe/nexus3:${{ github.sha }}
