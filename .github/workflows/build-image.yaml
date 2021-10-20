@@ -6,6 +6,9 @@ on:
       - main
     paths:
       - .github/workflows/build-image.yaml
+      - Dockerfile
+      - keycloak-plugin/nexus3-keycloak-plugin-0.5.0-bundle.kar
+      - keycloak-plugin/generate-credential-config
   schedule:
     - cron: "0 0 * * *"
   workflow_dispatch:
@@ -19,6 +22,11 @@ jobs:
           - master
           - 3.25.0
       fail-fast: false
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -37,6 +45,8 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
+        with:
+          driver-opts: network=host
 
       - name: Install cosign
         uses: sigstore/cosign-installer@main
@@ -66,16 +76,15 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: sonatype/docker-nexus3
-          push: false
-          load: true
+          push: true
           tags: |
-            sonatype/nexus3
+            localhost:5000/sonatype/nexus3
 
       - name: Get sonatype/nexus3 release
         id: release
         shell: bash
         env:
-          IMAGE: sonatype/nexus3@${{ steps.build-upstream.outputs.digest }}
+          IMAGE: localhost:5000/sonatype/nexus3@${{ steps.build-upstream.outputs.digest }}
         run: echo "::set-output name=release::$(docker image inspect -f '{{ index .Config.Labels "release" }}' "$IMAGE")"
 
       - name: Build nexus3:${{ steps.release.outputs.release }}
@@ -83,12 +92,11 @@ jobs:
         with:
           context: cray-hpe/nexus3
           build-args: |
-            IMAGE=sonatype/nexus3@${{ steps.build-upstream.outputs.digest }}
+            IMAGE=localhost:5000/sonatype/nexus3@${{ steps.build-upstream.outputs.digest }}
           push: true
           tags: |
             ghcr.io/cray-hpe/nexus3:${{ github.sha }}
             ghcr.io/cray-hpe/nexus3:${{ steps.release.outputs.release }}
-            ghcr.io/cray-hpe/nexus3:latest
 
       - name: Sign nexus3:${{ steps.release.outputs.release }}
         env:
@@ -97,4 +105,3 @@ jobs:
         run: |
           cosign sign -key $COSIGN_KEY -a GIT_HASH=$GITHUB_SHA ghcr.io/cray-hpe/nexus3:$GITHUB_SHA
           cosign sign -key $COSIGN_KEY -a GIT_TAG=$IMAGE_TAG ghcr.io/cray-hpe/nexus3:$IMAGE_TAG
-          cosign sign -key $COSIGN_KEY -a GIT_TAG=$IMAGE_TAG ghcr.io/cray-hpe/nexus3:latest
