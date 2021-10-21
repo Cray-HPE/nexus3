@@ -77,9 +77,9 @@ jobs:
         with:
           context: sonatype/docker-nexus3
           pull: true
-          load: true
           tags: |
             sonatype/nexus3:${{ steps.parse-version.outputs.version }}
+          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
 
       - name: Build nexus3:${{ steps.parse-version.outputs.version }}
         id: build-nexus3
@@ -92,6 +92,7 @@ jobs:
           tags: |
             artifactory.algol60.net/csm-docker/nexus3:${{ github.sha }}
             artifactory.algol60.net/csm-docker/nexus3:${{ steps.parse-version.outputs.version }}
+          cache-from: type=local,src=/tmp/.buildx-cache
 
       - name: Sign image tags
         env:
