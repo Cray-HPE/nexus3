@@ -22,11 +22,6 @@ jobs:
           - master
           - 3.25.0
       fail-fast: false
-    services:
-      registry:
-        image: registry:2
-        ports:
-          - 5000:5000
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -39,6 +34,11 @@ jobs:
           repository: sonatype/docker-nexus3
           path: sonatype/docker-nexus3
           ref: ${{ matrix.ref }}
+
+      - name: Parse Nexus version
+        id: parse-version
+        shell: bash
+        run: echo "::set-output name=version::$(grep -e '^ARG NEXUS_VERSION=' sonatype/docker-nexus3/Dockerfile | sed -e 's/^ARG NEXUS_VERSION=//' -e 's/-.*$//')"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -71,39 +71,31 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build sonatype/nexus3
-        id: build-upstream
+      - name: Build sonatype/nexus3:${{ steps.parse-version.output.version }}
+        id: build-base
         uses: docker/build-push-action@v2
         with:
           context: sonatype/docker-nexus3
-          push: true
           tags: |
-            localhost:5000/sonatype/nexus3:${{ matrix.ref }}
+            sonatype/nexus3:${{ steps.parse-version.outputs.version }}
 
-      - name: Get sonatype/nexus3 release
-        id: release
-        shell: bash
-        env:
-          registry: localhost:5000
-          image: sonatype/nexus3
-          digest: ${{ steps.build-upstream.outputs.digest }}
-        run: echo "::set-output name=release::$(curl --silent --location "http://${registry}/v2/${image}/blobs/${digest}" | jq -r '.config.Labels.release')"
-
-      - name: Build nexus3:${{ steps.release.outputs.release }}
+      - name: Build nexus3:${{ steps.parse-version.outputs.version }}
         uses: docker/build-push-action@v2
         with:
           context: cray-hpe/nexus3
           build-args: |
-            IMAGE=localhost:5000/sonatype/nexus3@${{ steps.build-upstream.outputs.digest }}
+            IMAGE=sonatype/nexus3@${{ steps.build-base.outputs.digest }}
           push: true
           tags: |
             ghcr.io/cray-hpe/nexus3:${{ github.sha }}
-            ghcr.io/cray-hpe/nexus3:${{ steps.release.outputs.release }}
+            ghcr.io/cray-hpe/nexus3:${{ steps.parse-version.outputs.version }}
 
-      - name: Sign nexus3:${{ steps.release.outputs.release }}
+      - name: Sign image tags
         env:
           COSIGN_KEY: ${{ secrets.COSIGN_KEY }}
-          IMAGE_TAG: ${{ steps.release.outputs.release }}
+          IMAGE_TAG: ${{ steps.parse-version.outputs.version }}
         run: |
           cosign sign -key $COSIGN_KEY -a GIT_HASH=$GITHUB_SHA ghcr.io/cray-hpe/nexus3:$GITHUB_SHA
           cosign sign -key $COSIGN_KEY -a GIT_TAG=$IMAGE_TAG ghcr.io/cray-hpe/nexus3:$IMAGE_TAG
+
+      # TODO: Scan image and save results
