@@ -1,4 +1,4 @@
-name: Build nexus3 image
+name: Build image
 
 on:
   push:
@@ -71,7 +71,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build sonatype/nexus3:${{ steps.parse-version.output.version }}
+      - name: Build sonatype/nexus3:${{ steps.parse-version.outputs.version }}
         id: build-base
         uses: docker/build-push-action@v2
         with:
@@ -80,17 +80,20 @@ jobs:
             sonatype/nexus3:${{ steps.parse-version.outputs.version }}
 
       - name: Build nexus3:${{ steps.parse-version.outputs.version }}
+        id: build-nexus3
+        if: steps.build-base.outputs.digest != null
         uses: docker/build-push-action@v2
         with:
           context: cray-hpe/nexus3
           build-args: |
-            IMAGE=sonatype/nexus3@${{ steps.build-base.outputs.digest }}
+            IMAGE=sonatype/nexus3:${{ steps.parse-version.outputs.version }}@${{ steps.build-base.outputs.digest }}
           push: true
           tags: |
             ghcr.io/cray-hpe/nexus3:${{ github.sha }}
             ghcr.io/cray-hpe/nexus3:${{ steps.parse-version.outputs.version }}
 
       - name: Sign image tags
+        if: steps.build-nexus3.outputs.digest != null
         env:
           COSIGN_KEY: ${{ secrets.COSIGN_KEY }}
           IMAGE_TAG: ${{ steps.parse-version.outputs.version }}
