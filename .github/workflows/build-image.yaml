@@ -97,7 +97,7 @@ jobs:
           tags: |
             ${{ env.registry }}/nexus3:${{ steps.parse-version.outputs.version }}
           cache-from: type=registry,ref=${{ env.registry }}/nexus3:${{ steps.parse-version.outputs.version }}
-          cache-to: inline
+          cache-to: type=inline
 
       - name: Sign image tags
         env:
