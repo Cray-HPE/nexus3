@@ -77,22 +77,22 @@ jobs:
           context: sonatype/docker-nexus3
           push: true
           tags: |
-            ${{ env.registry }}/docker.io/sonatype/nexus3:${{ steps.parse-version.outputs.version }}
+            ${{ env.registry }}/stable/docker.io/sonatype/nexus3:${{ steps.parse-version.outputs.version }}
 
       - name: Build nexus3:${{ steps.parse-version.outputs.version }}
         uses: docker/build-push-action@v2
         with:
           context: cray-hpe/nexus3
           build-args: |
-            IMAGE=${{ env.registry }}/docker.io/sonatype/nexus3:${{ steps.parse-version.outputs.version }}@${{ steps.build-base.outputs.digest }}
+            IMAGE=${{ env.registry }}/stable/docker.io/sonatype/nexus3:${{ steps.parse-version.outputs.version }}@${{ steps.build-base.outputs.digest }}
           push: true
           tags: |
-            ${{ env.registry }}/nexus3:${{ steps.parse-version.outputs.version }}
+            ${{ env.registry }}/stable/nexus3:${{ steps.parse-version.outputs.version }}
 
       - name: Sign image tags
         env:
           COSIGN_KEY: ${{ secrets.COSIGN_KEY }}
-          IMAGE: ${{ env.registry }}/nexus3:${{ steps.parse-version.outputs.version }}
+          IMAGE: ${{ env.registry }}/stable/nexus3:${{ steps.parse-version.outputs.version }}
         run: cosign sign -key $COSIGN_KEY $IMAGE
 
       # TODO: Scan image and save results
