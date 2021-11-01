@@ -2,7 +2,7 @@
 ---
 apiVersion: v2
 name: cray-nexus
-version: 1.0.0-alpha.1
+version: 1.0.4
 appVersion: 3.30.0
 description: Sonatype Nexus is an open source repository manager
 home: https://github.com/Cray-HPE/nexus3
@@ -17,6 +17,8 @@ sources:
 maintainers:
   - name: Zachary Crisler
     email: zachary.crisler@hpe.com
+  - name: Rob Noska
+    email: rnoska@hpe.com
 annotations:
   artifacthub.io/license: MIT
   artifacthub.io/images: |
