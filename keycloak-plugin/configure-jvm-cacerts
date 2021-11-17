@@ -1,0 +1,32 @@
+#!/bin/sh
+
+# Copyright 2021 Hewlett Packard Enterprise Development LP
+
+# Copy and append the Shasta CA to the Nexus JVM cacerts
+# so that it will be able to contact Keycloak over TLS.
+# This script runs post pod startup as the nexus user
+# and updates the nexus.vmoptions configuration.
+cacerts_file=/nexus-data/cacerts
+rm -f $cacerts_file
+crt_dir=/ca_public_key
+while [ ! -d $crt_dir ]; do
+  echo "Waiting on $crt_dir to be mounted.";
+  sleep 5;
+done
+echo "Found ${crt_dir}. Starting keytool import."
+
+# Begin with the default so that we have the existing CAs.
+cp /usr/lib/jvm/java-1.8.0/jre/lib/security/cacerts $cacerts_file
+chmod 644 $cacerts_file
+
+# There exist multiple PEM files in the CA configmap (i.e. mounted here)
+# so we will import all to ensure a successful TLS handshake.
+for crt in $(ls $crt_dir); do
+  # Import the Shasta CA.
+  keytool -importcert -file $crt_dir/$crt \
+   -alias cray-hpe-$crt \
+   -keystore $cacerts_file \
+   -storepass changeit \
+   -noprompt
+ echo "Imported $crt"
+done
