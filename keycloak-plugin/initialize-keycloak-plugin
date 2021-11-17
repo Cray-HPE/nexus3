@@ -6,3 +6,4 @@
 set -ex
 /usr/local/bin/generate-credential-config
 /usr/local/bin/configure-jvm-cacerts
+/usr/local/bin/update-realm
