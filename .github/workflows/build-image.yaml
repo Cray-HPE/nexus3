@@ -3,44 +3,39 @@ name: Build image
 on:
   push:
     branches:
+      - '**'
+    tags:
+      - 'v*.*.*'
+  pull_request:
+    branches:
       - main
-    paths:
-      - .github/workflows/build-image.yaml
-      - Dockerfile
-  schedule:
-    - cron: "0 0 * * *"
   workflow_dispatch:
 
 env:
   registry: artifactory.algol60.net/csm-docker
 
 jobs:
-  build:
+  docker:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        ref:
-          - master
-          - 3.25.0
-      fail-fast: false
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v3
         with:
-          path: cray-hpe/nexus3
-
-      - name: Checkout sonatype/docker-nexus3
-        uses: actions/checkout@v2
-        with:
-          repository: sonatype/docker-nexus3
-          path: sonatype/docker-nexus3
-          ref: ${{ matrix.ref }}
-
-      - name: Parse Nexus version
-        id: parse-version
-        shell: bash
-        run: echo "::set-output name=version::$(grep -e '^ARG NEXUS_VERSION=' sonatype/docker-nexus3/Dockerfile | sed -e 's/^ARG NEXUS_VERSION=//' -e 's/-.*$//')"
-
+          images: ${{ env.registry }}/${{ startsWith(github.ref, 'refs/tags/v') && 'stable' || 'unstable' }}/nexus3
+          labels: |
+            org.opencontainers.image.vendor=Hewlett Packard Enterprise Development LP
+          tags: |
+            type=schedule
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
+            type=sha,format=short,prefix=
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
 
@@ -70,29 +65,18 @@ jobs:
           username: ${{ secrets.ARTIFACTORY_ALGOL60_USERNAME }}
           password: ${{ secrets.ARTIFACTORY_ALGOL60_TOKEN }}
 
-      - name: Build sonatype/nexus3:${{ steps.parse-version.outputs.version }}
-        id: build-base
+      - name: Build and push
         uses: docker/build-push-action@v2
         with:
-          context: sonatype/docker-nexus3
-          push: true
-          tags: |
-            ${{ env.registry }}/stable/docker.io/sonatype/nexus3:${{ steps.parse-version.outputs.version }}
-
-      - name: Build nexus3:${{ steps.parse-version.outputs.version }}
-        uses: docker/build-push-action@v2
-        with:
-          context: cray-hpe/nexus3
-          build-args: |
-            IMAGE=${{ env.registry }}/stable/docker.io/sonatype/nexus3:${{ steps.parse-version.outputs.version }}@${{ steps.build-base.outputs.digest }}
-          push: true
-          tags: |
-            ${{ env.registry }}/stable/nexus3:${{ steps.parse-version.outputs.version }}
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
       - name: Sign image tags
         env:
           COSIGN_KEY: ${{ secrets.COSIGN_KEY }}
-          IMAGE: ${{ env.registry }}/stable/nexus3:${{ steps.parse-version.outputs.version }}
+          IMAGE: ${{ steps.meta.outputs.tags }}
         run: cosign sign -key $COSIGN_KEY $IMAGE
 
       # TODO: Scan image and save results
