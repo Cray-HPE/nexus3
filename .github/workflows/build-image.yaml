@@ -74,6 +74,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
       - name: Sign image tags
+        if: ${{ github.event_name != 'pull_request' }}
         env:
           COSIGN_KEY: ${{ secrets.COSIGN_KEY }}
           IMAGE: ${{ steps.meta.outputs.tags }}
