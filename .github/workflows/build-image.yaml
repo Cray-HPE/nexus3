@@ -58,7 +58,7 @@ jobs:
           service_account: 'cosign@sdlc-ops.iam.gserviceaccount.com'
 
       - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@master
+        uses: google-github-actions/setup-gcloud@v0
 
       - name: Use gcloud CLI
         run: gcloud info
