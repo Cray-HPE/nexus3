@@ -13,13 +13,16 @@ on:
 
 env:
   registry: artifactory.algol60.net/csm-docker
+  image_repository: ${{ env.registry }}/${{ startsWith(github.ref, 'refs/tags/v') && 'stable' || 'unstable' }}/nexus3
 
 jobs:
   docker:
     runs-on: ubuntu-latest
+
     permissions:
       contents: 'read'
       id-token: 'write'
+
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -28,7 +31,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v3
         with:
-          images: ${{ env.registry }}/${{ startsWith(github.ref, 'refs/tags/v') && 'stable' || 'unstable' }}/nexus3
+          images: ${{ env.image_repository }}
           labels: |
             org.opencontainers.image.vendor=Hewlett Packard Enterprise Development LP
           tags: |
@@ -39,6 +42,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
             type=sha,format=short,prefix=
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
 
@@ -82,7 +86,7 @@ jobs:
         if: ${{ github.event_name != 'pull_request' }}
         env:
           COSIGN_KEY: ${{ secrets.COSIGN_KEY }}
-          IMAGE: ${{ steps.meta.outputs.tags }}
-        run: cosign sign -key $COSIGN_KEY $IMAGE
+          IMAGES: ${{ steps.meta.outputs.tags }}
+        run: sort -t: -k1,1 -u <<< "$IMAGES" | xargs -t -n 1 cosign sign --key "$COSIGN_KEY"
 
       # TODO: Scan image and save results
