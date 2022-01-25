@@ -14,7 +14,7 @@ on:
 
 jobs:
   build:
-    uses: Cray-HPE/.github/.github/workflows/container-image-build.yml
+    uses: Cray-HPE/.github/.github/workflows/container-image-build.yml@main
     with:
       name: nexus3
       #stable: startsWith(github.ref, 'refs/tags/v')
