@@ -87,6 +87,6 @@ jobs:
         env:
           COSIGN_KEY: ${{ secrets.COSIGN_KEY }}
           IMAGES: ${{ steps.meta.outputs.tags }}
-        run: sort -t: -k1,1 -u <<< "$IMAGES" | xargs -t -n 1 cosign sign --key "$COSIGN_KEY"
+        run: sort -t ':' -k '1,1' -u <<< "$IMAGES" | xargs -t -n 1 cosign sign --key "$COSIGN_KEY"
 
       # TODO: Scan image and save results
