@@ -25,7 +25,7 @@ jobs:
       #  type=semver,pattern={{version}}
       #  type=semver,pattern={{major}}.{{minor}}
       #  type=semver,pattern={{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
-      snyk-args: --severity-threshold=medium --sarif-file-output=snyk.sarif
+      snyk-args: --file=Dockerfile --severity-threshold=medium
       upload-scan-results: ${{ github.event_name != 'pull_request' }}
     secrets:
       registry-username: ${{ secrets.ARTIFACTORY_ALGOL60_USERNAME }}
