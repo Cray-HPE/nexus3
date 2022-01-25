@@ -13,7 +13,7 @@ on:
 
 env:
   registry: artifactory.algol60.net/csm-docker
-  image_repository: ${{ env.registry }}/${{ startsWith(github.ref, 'refs/tags/v') && 'stable' || 'unstable' }}/nexus3
+  image_name: nexus3
 
 jobs:
   docker:
@@ -31,7 +31,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v3
         with:
-          images: ${{ env.image_repository }}
+          images: ${{ env.registry }}/${{ startsWith(github.ref, 'refs/tags/v') && 'stable' || 'unstable' }}/${{ env.image_name }}
           labels: |
             org.opencontainers.image.vendor=Hewlett Packard Enterprise Development LP
           tags: |
