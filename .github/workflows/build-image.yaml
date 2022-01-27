@@ -118,6 +118,13 @@ jobs:
           image-ref: ${{ fromJSON(needs.build.outputs.refs)[0] }}
           exit-code: '1'
           ignore-unfixed: true
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ fromJSON(needs.build.outputs.refs)[0] }}
+          exit-code: '1'
+          ignore-unfixed: true
           format: template
           template: '@/contrib/sarif.tpl'
           output: trivy-results.sarif
