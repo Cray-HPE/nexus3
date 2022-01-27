@@ -1,4 +1,4 @@
-name: Build image
+name: Build, sign, and scanimage
 
 on:
   push:
@@ -12,26 +12,116 @@ on:
       - release/**
   workflow_dispatch:
 
+#jobs:
+#  build:
+#    uses: Cray-HPE/.github/.github/workflows/container-image-build.yml@main
+#    with:
+#      name: nexus3
+#      #stable: startsWith(github.ref, 'refs/tags/v')
+#      #tags: |-
+#      #  type=schedule
+#      #  type=ref,event=branch
+#      #  type=ref,event=pr
+#      #  type=semver,pattern={{version}}
+#      #  type=semver,pattern={{major}}.{{minor}}
+#      #  type=semver,pattern={{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
+#      snyk-args: --file=Dockerfile --severity-threshold=medium
+#      upload-scan-results: ${{ github.event_name != 'pull_request' }}
+#    secrets:
+#      registry-username: ${{ secrets.ARTIFACTORY_ALGOL60_USERNAME }}
+#      registry-password: ${{ secrets.ARTIFACTORY_ALGOL60_TOKEN }}
+#      snyk-token: ${{ secrets.SNYK_TOKEN }}
+#    permissions:
+#      contents: read
+#      id-token: write
+#      security-events: write
+
+env:
+  registry: artifactory.algol60.net/csm-docker
+  image-name: my-image
+
 jobs:
   build:
-    uses: Cray-HPE/.github/.github/workflows/container-image-build.yml@main
-    with:
-      name: nexus3
-      #stable: startsWith(github.ref, 'refs/tags/v')
-      #tags: |-
-      #  type=schedule
-      #  type=ref,event=branch
-      #  type=ref,event=pr
-      #  type=semver,pattern={{version}}
-      #  type=semver,pattern={{major}}.{{minor}}
-      #  type=semver,pattern={{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
-      snyk-args: --file=Dockerfile --severity-threshold=medium
-      upload-scan-results: ${{ github.event_name != 'pull_request' }}
-    secrets:
-      registry-username: ${{ secrets.ARTIFACTORY_ALGOL60_USERNAME }}
-      registry-password: ${{ secrets.ARTIFACTORY_ALGOL60_TOKEN }}
-      snyk-token: ${{ secrets.SNYK_TOKEN }}
+    name: Build and push images
+
+    runs-on: ubuntu-latest
+
     permissions:
-      contents: read
+      context: read
+
+    outputs:
+      refs: ${{ steps.build.outputs.refs }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Login to Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ env.registry }}
+          username: ${{ secrets.ARTIFACTORY_ALGOL60_USERNAME }}
+          password: ${{ secrets.ARTIFACTORY_ALGOL60_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Build image
+        id: build
+        uses: Cray-HPE/github-actions/container-images/build@main
+        with:
+          stable-images: ${{ env.registry }}/stable/${{ env.image-name }}
+          unstable-images: ${{ env.registry }}/unstable/${{ env.image-name }}
+
+  sign:
+    name: Sign images
+
+    needs: build
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Install cosign
+        uses: sigstore/cosign-installer@main
+
+      - name: Check cosign install
+        run: cosign version
+
+      - name: Sign images with GitHub OIDC Token **not production ready**
+        env:
+          IMAGES: ${{ join(fromJSON(needs.build.outputs.refs), ' ') }}
+          COSIGN_EXPERIMENTAL: 1
+        run: cosign sign "$IMAGES"
+
+  trivy:
+    name: Scan image for fixable vulnerabilities
+
+    needs: build
+    runs-on: ubuntu-latest
+
+    permissions:
       id-token: write
       security-events: write
+
+    steps:
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ fromJSON(needs.build.outputs.refs)[0] }}
+          exit-code: '1'
+          ignore-unfixed: true
+          format: template
+          template: '@/contrib/sarif.tpl'
+          output: trivy-results.sarif
+
+      - name: Upload results to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v1
+        if: ${{ always() && hashFiles('trivy-results.sarif') != ''}}
+        with:
+          sarif_file: trivy-results.sarif
+
