@@ -69,8 +69,8 @@ jobs:
         id: build
         uses: Cray-HPE/github-actions/container-images/build@main
         with:
-          stable-images: artifactory.algol60.net/stable/nexus3
-          unstable-images: artifactory.algol60.net/unstable/nexus3
+          stable-images: artifactory.algol60.net/csm-docker/stable/nexus3
+          unstable-images: artifactory.algol60.net/csm-docker/unstable/nexus3
 
   sign:
     name: Sign images
