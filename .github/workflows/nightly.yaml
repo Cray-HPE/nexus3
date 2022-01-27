@@ -1,4 +1,4 @@
-name: Build and scan image
+name: Nightly build, sign, and scan image
 
 on:
   schedule:
