@@ -36,10 +36,6 @@ on:
 #      id-token: write
 #      security-events: write
 
-env:
-  registry: artifactory.algol60.net/csm-docker
-  image-name: my-image
-
 jobs:
   build:
     name: Build and push images
@@ -59,7 +55,7 @@ jobs:
       - name: Login to Registry
         uses: docker/login-action@v1
         with:
-          registry: ${{ env.registry }}
+          registry: artifactory.algol60.net/csm-docker
           username: ${{ secrets.ARTIFACTORY_ALGOL60_USERNAME }}
           password: ${{ secrets.ARTIFACTORY_ALGOL60_TOKEN }}
 
@@ -73,8 +69,8 @@ jobs:
         id: build
         uses: Cray-HPE/github-actions/container-images/build@main
         with:
-          stable-images: ${{ env.registry }}/stable/${{ env.image-name }}
-          unstable-images: ${{ env.registry }}/unstable/${{ env.image-name }}
+          stable-images: artifactory.algol60.net/stable/nexus3
+          unstable-images: artifactory.algol60.net/unstable/nexus3
 
   sign:
     name: Sign images
