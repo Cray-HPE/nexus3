@@ -1,4 +1,4 @@
-name: Build, sign, and scanimage
+name: Build, sign, and scan image
 
 on:
   push:
@@ -38,7 +38,7 @@ on:
 
 jobs:
   build:
-    name: Build and push images
+    name: Build and push image
 
     runs-on: ubuntu-latest
 
@@ -73,7 +73,7 @@ jobs:
           unstable-images: artifactory.algol60.net/csm-docker/unstable/nexus3
 
   sign:
-    name: Sign images
+    name: Sign image
 
     needs: build
     runs-on: ubuntu-latest
@@ -88,7 +88,7 @@ jobs:
       - name: Check cosign install
         run: cosign version
 
-      - name: Sign images with GitHub OIDC Token **not production ready**
+      - name: Sign image refs with GitHub OIDC Token **not production ready**
         env:
           IMAGES: ${{ join(fromJSON(needs.build.outputs.refs), ' ') }}
           COSIGN_EXPERIMENTAL: 1
@@ -105,6 +105,13 @@ jobs:
       security-events: write
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - run: docker pull "$IMAGE"
+        env:
+          IMAGE: ${{ fromJSON(needs.build.outputs.refs)[0] }}
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
