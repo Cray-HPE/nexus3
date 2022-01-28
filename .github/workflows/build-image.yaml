@@ -156,9 +156,7 @@ jobs:
 
       - name: Check if scans found vulnerabilities
         if: ${{ steps.scan.outcome == 'failure' }}
-        run: |
-          echo "::error::Trivy scan found vulnerabilities"
-          exit 1
+        run: echo "::error::Trivy scan found vulnerabilities"
 
   snyk:
     name: Scan image (Snyk)
@@ -230,6 +228,4 @@ jobs:
 
       - name: Check if scans found vulnerabilities
         if: ${{ steps.scan.outcome == 'failure' }}
-        run: |
-          echo "::error::Snyk scan found vulnerabilities"
-          exit 1
+        run: echo "::error::Snyk scan found vulnerabilities"
