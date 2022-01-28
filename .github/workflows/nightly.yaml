@@ -52,7 +52,7 @@ jobs:
         with:
           stable-images: artifactory.algol60.net/csm-docker/stable/nexus3
           unstable-images: artifactory.algol60.net/csm-docker/unstable/nexus3
-          generate-tags: type=sha,format=long
+          tags: type=raw,value=sha-${{ steps.git.output.sha }}
 
       - name: Install cosign
         uses: sigstore/cosign-installer@main
