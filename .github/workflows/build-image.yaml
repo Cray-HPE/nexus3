@@ -114,7 +114,7 @@ jobs:
       #    IMAGE: ${{ fromJSON(needs.build.outputs.refs)[0] }}
 
       - name: Run Trivy vulnerability scanner
-        id: trivy
+        id: scan
         uses: aquasecurity/trivy-action@master
         continue-on-error: true
         with:
@@ -122,7 +122,7 @@ jobs:
           exit-code: '1'
           output: trivy.txt
 
-
+      # Run again to get JSON results -- Trivy uses results cached from previous run
       - name: Run Trivy vulnerability scanner (JSON results)
         uses: aquasecurity/trivy-action@master
         with:
@@ -130,7 +130,7 @@ jobs:
           format: table
           output: trivy.json
 
-      - name: Upload Trivy results (table)
+      - name: Upload results
         uses: actions/upload-artifact@v2
         with:
           name: trivy-results
@@ -149,12 +149,88 @@ jobs:
           template: '@/contrib/sarif.tpl'
           output: trivy.sarif
 
-      - name: Upload fixable Trivy vulnerabilities to GitHub Code Scanning
+      - name: Upload fixable vulnerabilities to GitHub Code Scanning
         if: ${{ hashFiles('trivy.sarif') != ''}}
         uses: github/codeql-action/upload-sarif@v1
         with:
           sarif_file: trivy.sarif
 
       - name: Check if scans found vulnerabilities
-        if: ${{ steps.trivy.outcome == 'failure' }}
-        run: echo "::error::Trivy scan found vulnerabilities"
+        if: ${{ steps.scan.outcome == 'failure' }}
+        run: |
+          echo "::error::Trivy scan found vulnerabilities"
+          exit 1
+
+snyk:
+  name: Scan image (Snyk)
+
+  needs: build
+  runs-on: ubuntu-latest
+
+  permissions:
+    id-token: write
+    security-events: write
+
+  steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Snyk scan image for vulnerabilities
+        id: scan
+        uses: snyk/actions/docker@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.snyk-token }}
+        with:
+          image: ${{ fromJSON(needs.build.outputs.refs)[0] }}
+          json: true
+          args: --file=Dockerfile
+
+      - name: Upload results
+        if: ${{ hashFiles('snyk.json') != ''}}
+        uses: actions/upload-artifact@v2
+        with:
+          name: snyk-results
+          path: |
+            snyk.json
+          retention-days: ${{ needs.build.outputs.stable == 'true' && 90 || 5 }}
+
+      # Filter for Snyk results for fixable vulnerabilties
+      - uses: snyk/actions/setup@master
+        if: ${{ needs.build.outputs.stable == 'true' && hashFiles('snyk.json') != ''}}
+
+      - name: Create Snyk policy to ignore unfixable vulnerabilities
+        if: ${{ needs.build.outputs.stable == 'true' && hashFiles('snyk.json') != ''}}
+        run: |-
+          export created="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+          export expires="$(date -u '+%Y-%m-%dT%H:%M:%SZ' -d '30 days')"
+          [ -f .snyk ] || yq e -n '{"version": "v1.22.1", "ignore": {}, "patch": {}}' > .snyk
+          jq -r '.vulnerabilities[] | select(.isUpgradeable or .isPatchable or .nearestFixedInVersion | not) | .id' snyk.json | while read snykid; do
+            export snykid
+            yq e -i '.ignore[strenv(snykid)] = [{"*": {"reason": "Not Fixable", "expires": strenv(expires), "created": strenv(created)}}]' .snyk
+          done
+
+      - name: Snyk scan image for **fixable** vulnerabilities
+        if: ${{ needs.build.outputs.stable == 'true' && hashFiles('snyk.json') != '' }}
+        uses: snyk/actions/docker@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.snyk-token }}
+        with:
+          image: ${{ fromJSON(steps.image-refs.outputs.refs)[0] }}
+          json: false
+          # Note: Even with `sarif: true` SARIF output is only generated if `--file=` is specified in args
+          sarif: true
+          args: --file=Dockerfile --policy-path=.snyk
+
+      - name: Upload fixable vulnerabilities to GitHub Code Scanning
+        if: ${{ hashFiles('snyk.sarif') != ''}}
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: snyk.sarif
+
+      - name: Check if scans found vulnerabilities
+        if: ${{ steps.scan.outcome == 'failure' }}
+        run: |
+          echo "::error::Snyk scan found vulnerabilities"
+          exit 1
