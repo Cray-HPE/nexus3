@@ -96,7 +96,7 @@ jobs:
 
   trivy:
     name: Scan image for fixable vulnerabilities
-    if: ${{ github.event_name == 'pull_request' }}
+    #if: ${{ github.event_name == 'pull_request' }}
 
     needs: build
     runs-on: ubuntu-latest
