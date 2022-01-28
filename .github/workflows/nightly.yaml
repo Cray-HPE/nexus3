@@ -16,7 +16,7 @@ jobs:
 
     strategy:
       matrix:
-        refs:
+        ref:
           - main
           - v3.25.0-2
     steps:
