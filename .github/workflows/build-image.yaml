@@ -180,7 +180,7 @@ jobs:
         uses: snyk/actions/docker@master
         continue-on-error: true
         env:
-          SNYK_TOKEN: ${{ secrets.snyk-token }}
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           image: ${{ fromJSON(needs.build.outputs.refs)[0] }}
           json: true
@@ -203,7 +203,7 @@ jobs:
         if: ${{ needs.build.outputs.stable == 'true' && hashFiles('snyk.json') != ''}}
         run: |-
           export created="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
-          export expires="$(date -u '+%Y-%m-%dT%H:%M:%SZ' -d '30 days')"
+          export expires="$(date -u '+%Y-%m-%dT%H:%M:%SZ' -d '90 days')"
           [ -f .snyk ] || yq e -n '{"version": "v1.22.1", "ignore": {}, "patch": {}}' > .snyk
           jq -r '.vulnerabilities[] | select(.isUpgradeable or .isPatchable or .nearestFixedInVersion | not) | .id' snyk.json | while read snykid; do
             export snykid
@@ -217,7 +217,7 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.snyk-token }}
         with:
-          image: ${{ fromJSON(steps.image-refs.outputs.refs)[0] }}
+          image: ${{ fromJSON(needs.build.outputs.refs)[0] }}
           json: false
           # Note: Even with `sarif: true` SARIF output is only generated if `--file=` is specified in args
           sarif: true
