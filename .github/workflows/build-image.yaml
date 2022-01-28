@@ -82,17 +82,16 @@ jobs:
       id-token: write
 
     steps:
-      - name: Install cosign
-        uses: sigstore/cosign-installer@main
+      - uses: Cray-HPE/github-actions/setup-cosign
 
-      - name: Check cosign install
-        run: cosign version
+      - uses: Cray-HPE/github-actions/setup-gcloud
+        id: gcloud
 
-      - name: Sign image refs with GitHub OIDC Token **not production ready**
-        env:
-          IMAGES: ${{ join(fromJSON(needs.build.outputs.refs), ' ') }}
-          COSIGN_EXPERIMENTAL: 1
-        run: cosign sign "$IMAGES"
+      - name: Sign image
+        uses: Cray-HPE/github-actions/container-images/sign
+        with:
+          images: ${{ join(fromJSON(needs.build.outputs.refs), '\n') }}
+          key: ${{ steps.gcloud.outputs.cosign-build-key }}
 
   trivy:
     name: Scan image (Trivy)
