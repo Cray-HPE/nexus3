@@ -25,6 +25,14 @@ jobs:
         with:
           ref: ${{ matrix.ref }}
 
+      - name: Set Git parameters
+        id: git
+        env:
+          GITHUB_REF: ${{ matrix.ref }}
+        run: |
+          echo "::set-output name=sha::$(git rev-parse --verify "$REF")"
+          echo "::set-output name=ref::$(git rev-parse --verify --symbolic-full-name "$REF")"
+
       - name: Login to Registry
         uses: docker/login-action@v1
         with:
@@ -65,11 +73,14 @@ jobs:
           ignore-unfixed: true
           format: template
           template: '@/contrib/sarif.tpl'
-          output: trivy-results.sarif
+          output: trivy.sarif
 
       - name: Upload results to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v1
+        env:
+          GITHUB_REF: ${{ steps.git.outputs.ref }}
+          GITHUB_SHA: ${{ steps.git.outputs.sha }}
         with:
-          sarif_file: trivy-results.sarif
+          sarif_file: trivy.sarif
 
 
