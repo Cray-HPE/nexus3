@@ -49,9 +49,6 @@ jobs:
       - name: Build image
         id: build
         uses: Cray-HPE/github-actions/container-images/build@main
-        env:
-          GITHUB_REF: ${{ steps.git.outputs.ref }}
-          GITHUB_SHA: ${{ steps.git.outputs.sha }}
         with:
           stable-images: artifactory.algol60.net/csm-docker/stable/nexus3
           unstable-images: artifactory.algol60.net/csm-docker/unstable/nexus3
@@ -69,15 +66,10 @@ jobs:
         env:
           IMAGES: ${{ join(fromJSON(steps.build.outputs.refs), ' ') }}
           COSIGN_EXPERIMENTAL: 1
-          GITHUB_REF: ${{ steps.git.outputs.ref }}
-          GITHUB_SHA: ${{ steps.git.outputs.sha }}
         run: cosign sign "$IMAGES"
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
-        env:
-          GITHUB_REF: ${{ steps.git.outputs.ref }}
-          GITHUB_SHA: ${{ steps.git.outputs.sha }}
         with:
           image-ref: ${{ fromJSON(steps.build.outputs.refs)[0] }}
           ignore-unfixed: true
@@ -86,10 +78,10 @@ jobs:
           output: trivy.sarif
 
       - name: Upload results to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v1
-        env:
-          GITHUB_REF: ${{ steps.git.outputs.ref }}
-          GITHUB_SHA: ${{ steps.git.outputs.sha }}
+        #uses: github/codeql-action/upload-sarif@v1
+        uses: cw-acroteau/codeql-action/upload-sarif@add-ref-input
         with:
+          ref: ${{ steps.git.outputs.ref }}
+          sha: ${{ steps.git.outputs.sha }}
           sarif_file: trivy.sarif
 
