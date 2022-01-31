@@ -29,12 +29,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REF: ${{ matrix.ref }}
+        shell: bash
         run: |
           curl -sfi \
             -H "Authorization: Bearer ${GITHUB_TOKEN}" \
             -H "Accept: application/vnd.github.v3+json" \
             -H "Content-Type: application/json" \
-            -X POST "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/workflows/build-image.yaml/dispatches"
+            -X POST "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/workflows/build-image.yaml/dispatches" \
             --data "{\"ref\":\"${REF}\"}"
 
       - name: Build (${{ matrix.ref }})
