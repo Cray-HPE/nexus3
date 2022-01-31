@@ -26,6 +26,7 @@ jobs:
     steps:
       - name: Build (${{ matrix.ref }})
         env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
           REF: ${{ matrix.ref }}
         run: gh workflow run build-image.yaml --ref "$REF"
