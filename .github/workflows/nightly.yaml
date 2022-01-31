@@ -11,6 +11,9 @@ jobs:
 
     permissions:
       actions: write
+      contents: read
+      id-token: write
+      security-events: write
 
     # Note: on.schedule triggered workflows ALWAYS run on the default branch.
     # This matrixed job checks out specific refs to build, sign, and scan;
@@ -29,4 +32,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
           REF: ${{ matrix.ref }}
-        run: gh workflow run build-image.yaml --ref "$REF"
+        run: |
+          gh workflow run build-image.yaml --ref "$REF"
+          gh run list --workflow=build-image.yaml
