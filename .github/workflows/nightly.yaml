@@ -14,6 +14,12 @@ jobs:
       id-token: write
       security-events: write
 
+    # Note: on.schedule triggered workflows ALWAYS run on the default branch.
+    # This matrixed job checks out specific refs to build, sign, and scan;
+    # however, care is taken to make sure individual steps reference the
+    # correct Git ref and commit SHA as opposed to what's in the github context
+    # (e.g., github.ref and github.sha).
+
     strategy:
       matrix:
         ref:
@@ -46,25 +52,21 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
+      - name: Set up Cosign
+        uses: Cray-HPE/github-actions/setup-cosign@main
+
       - name: Build image
         id: build
         uses: Cray-HPE/github-actions/container-images/build@main
         with:
           stable-images: artifactory.algol60.net/csm-docker/stable/nexus3
           unstable-images: artifactory.algol60.net/csm-docker/unstable/nexus3
-          tags: type=raw,value=sha-${{ steps.git.output.sha }}
+          tags: type=raw,value=sha-${{ steps.git.outputs.sha }}
 
-      - name: Install cosign
-        uses: sigstore/cosign-installer@main
-
-      - name: Check cosign install
-        run: cosign version
-
-      - name: Sign image refs with GitHub OIDC Token **not production ready**
-        env:
-          IMAGES: ${{ join(fromJSON(steps.build.outputs.refs), ' ') }}
-          COSIGN_EXPERIMENTAL: 1
-        run: cosign sign "$IMAGES"
+      - name: Sign image
+        uses: Cray-HPE/github-actions/container-images/sign@main
+        with:
+          images: ${{ join(fromJSON(steps.build.outputs.refs), '\n') }}
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
@@ -77,6 +79,7 @@ jobs:
 
       - name: Upload results to GitHub Code Scanning
         #uses: github/codeql-action/upload-sarif@v1
+        # See https://github.com/github/codeql-action/pull/889
         uses: cw-acroteau/codeql-action/upload-sarif@add-ref-input
         with:
           ref: ${{ steps.git.outputs.ref }}
