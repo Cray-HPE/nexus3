@@ -9,12 +9,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    permissions:
-      actions: write
-      contents: read
-      id-token: write
-      security-events: write
-
     # Note: on.schedule triggered workflows ALWAYS run on the default branch.
     # This matrixed job checks out specific refs to build, sign, and scan;
     # however, care is taken to make sure individual steps reference the
