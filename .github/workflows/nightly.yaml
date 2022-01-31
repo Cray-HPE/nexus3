@@ -25,11 +25,23 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Trigger Build (${{ matrix.ref }})
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REF: ${{ matrix.ref }}
+        run: |
+          curl -sfi \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Content-Type: application/json" \
+            -X POST "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/workflows/build-image.yaml/dispatches"
+            --data "{\"ref\":\"${REF}\"}"
+
       - name: Build (${{ matrix.ref }})
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REF: ${{ matrix.ref }}
           DEBUG: 'true'
         run: |
-          gh workflow run build-image.yaml --ref "$REF"
+          #gh workflow run build-image.yaml --ref "$REF"
           gh run list --workflow=build-image.yaml
