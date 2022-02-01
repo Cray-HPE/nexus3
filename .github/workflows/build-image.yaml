@@ -108,55 +108,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      #- run: docker pull "$IMAGE"
-      #  env:
-      #    IMAGE: ${{ fromJSON(needs.build.outputs.refs)[0] }}
-
       - name: Run Trivy vulnerability scanner
-        id: scan
-        uses: aquasecurity/trivy-action@master
-        continue-on-error: true
+        uses: Cray-HPE/github-actions/container-images/scan/trivy@main
         with:
-          image-ref: ${{ fromJSON(needs.build.outputs.refs)[0] }}
-          exit-code: '1'
-          output: trivy.txt
-
-      # Run again to get JSON results -- Trivy uses results cached from previous run
-      - name: Run Trivy vulnerability scanner (JSON results)
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ fromJSON(needs.build.outputs.refs)[0] }}
-          format: table
-          output: trivy.json
-
-      - name: Upload results
-        uses: actions/upload-artifact@v2
-        with:
-          name: trivy-results
-          path: |
-            trivy.txt
-            trivy.json
+          image: ${{ fromJSON(needs.build.outputs.refs)[0] }}
           retention-days: ${{ needs.build.outputs.stable == 'true' && 90 || 5 }}
-
-      - name: Run Trivy vulnerability scanner (**fixable**)
-        if: ${{ needs.build.outputs.stable == 'true' }}
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ fromJSON(needs.build.outputs.refs)[0] }}
-          ignore-unfixed: true
-          format: template
-          template: '@/contrib/sarif.tpl'
-          output: trivy.sarif
-
-      - name: Upload fixable vulnerabilities to GitHub Code Scanning
-        if: ${{ hashFiles('trivy.sarif') != ''}}
-        uses: github/codeql-action/upload-sarif@v1
-        with:
-          sarif_file: trivy.sarif
-
-      - name: Check if scans found vulnerabilities
-        if: ${{ steps.scan.outcome == 'failure' }}
-        run: echo "::error::Trivy scan found vulnerabilities"
+          upload-sarif: ${{ needs.build.outputs.stable == 'true' }}
 
   snyk:
     name: Scan image (Snyk)
