@@ -5,7 +5,8 @@ on:
     - cron: '30 2 * * *'
   workflow_dispatch:
 
-permissions: write-all
+permissions:
+  actions: write
 
 jobs:
   build:
@@ -22,27 +23,21 @@ jobs:
         ref:
           - main
           - v3.25.0-2
-    steps:
-      - uses: actions/checkout@v2
 
-      - name: Trigger Build (${{ matrix.ref }})
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REF: ${{ matrix.ref }}
-        shell: bash
-        run: |
-          curl -sfi \
-            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            -H "Content-Type: application/json" \
-            -X POST "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/workflows/build-image.yaml/dispatches" \
-            --data "{\"ref\":\"${REF}\"}"
+    steps:
+      - name: Get auth token
+        uses: navikt/github-app-token-generator@v1
+        id: gen-token
+        with:
+          private-key: ${{ secrets.ALGOL60_GITHUB_READONLY_APP }}
+          app-id: 129003
 
       - name: Build (${{ matrix.ref }})
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.gen-token.outputs.token }}
+          GH_REPO: ${{ github.repository }}
           REF: ${{ matrix.ref }}
           DEBUG: 'true'
         run: |
-          #gh workflow run build-image.yaml --ref "$REF"
+          gh workflow run build-image.yaml --ref "$REF"
           gh run list --workflow=build-image.yaml
