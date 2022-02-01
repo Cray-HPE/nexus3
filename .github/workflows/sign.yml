@@ -1,0 +1,21 @@
+name: Sign nexus3 image
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  sign:
+    permissions:
+      id-token: write
+    steps:
+      - uses: Cray-HPE/github-actions/setup-cosign@main
+
+      - uses: Cray-HPE/github-actions/setup-gcloud@main
+        id: gcloud
+
+      - name: Sign image
+        uses: Cray-HPE/github-actions/cosign@main
+        with:
+          images: artifactory.algol60.net/csm-docker/stable/nexus3:3.25.0-2
+          key: ${{ steps.gcloud.outputs.cosign-build-key }}
+
