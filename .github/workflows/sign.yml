@@ -9,6 +9,13 @@ jobs:
     permissions:
       id-token: write
     steps:
+      - name: Login to Registry
+        uses: docker/login-action@v1
+        with:
+          registry: artifactory.algol60.net/csm-docker
+          username: ${{ secrets.ARTIFACTORY_ALGOL60_USERNAME }}
+          password: ${{ secrets.ARTIFACTORY_ALGOL60_TOKEN }}
+
       - uses: Cray-HPE/github-actions/setup-cosign@main
 
       - uses: Cray-HPE/github-actions/setup-gcloud@main
