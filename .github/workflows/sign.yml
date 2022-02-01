@@ -5,6 +5,7 @@ on:
 
 jobs:
   sign:
+    runs-on: ubuntu-latest
     permissions:
       id-token: write
     steps:
