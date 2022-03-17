@@ -1,4 +1,4 @@
-FROM sonatype/nexus3:3.25.0
+FROM sonatype/nexus3:3.38.0
 
 # Install the Keycloak plugin, see https://github.com/flytreeleft/nexus3-keycloak-plugin
 ARG KEYCLOAK_PLUGIN_VERSION=0.5.0

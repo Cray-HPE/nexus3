@@ -23,6 +23,7 @@ jobs:
         ref:
           - main
           - v3.25.0-2
+          - v3.38.0
 
     steps:
       - name: Get auth token
