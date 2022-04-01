@@ -48,7 +48,7 @@ jobs:
     env:
       stable-images: artifactory.algol60.net/csm-docker/stable/nexus3
       unstable-images: artifactory.algol60.net/csm-docker/unstable/nexus3
-      CONTEXT_PATH: ''
+      CONTEXT_PATH: /
 
     steps:
       - name: Checkout repo
