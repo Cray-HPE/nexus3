@@ -38,13 +38,10 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     permissions:
       contents: read
       id-token: write
-
     env:
       stable-images: artifactory.algol60.net/csm-docker/stable/nexus3
       unstable-images: artifactory.algol60.net/csm-docker/unstable/nexus3
@@ -54,31 +51,31 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Check if stable
-      id: check
-      env:
-        REF: ${{ github.ref }}
-      shell: bash
-      run: |
-        if [[ -n "$(perl -ne 'print if /^refs\/tags\/v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/' <<< "$REF")" ]]; then
-            echo "::set-output name=stable::true"
-        else
-            echo "::set-output name=stable::false"
-        fi
+        id: check
+        env:
+          REF: ${{ github.ref }}
+        shell: bash
+        run: |
+          if [[ -n "$(perl -ne 'print if /^refs\/tags\/v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/' <<< "$REF")" ]]; then
+              echo "::set-output name=stable::true"
+          else
+              echo "::set-output name=stable::false"
+          fi
       
       - name: Set images
-      id: images
-      env:
-        IMAGES: |
-          ${{ steps.check.outputs.stable == 'true' && env.stable-images || env.unstable-images }}
-      shell: bash
-      run: |
-        echo "::set-output name=images::$(sed -e '/^[[:space:]]*$/d' <<< "$IMAGES")"
+        id: images
+        env:
+          IMAGES: |
+            ${{ steps.check.outputs.stable == 'true' && env.stable-images || env.unstable-images }}
+        shell: bash
+        run: |
+          echo "::set-output name=images::$(sed -e '/^[[:space:]]*$/d' <<< "$IMAGES")"
 
       - name: Get Tag
-      id: tag
-      shell: bash
-      run: |
-        echo "::set-output name=tags::$(grep -i -E '^FROM .+:.+' .//Dockerfile | awk -F ":" '{ print $(NF) })"
+        id: tag
+        shell: bash
+        run: |
+          echo "::set-output name=tags::$(grep -i -E '^FROM .+:.+' .//Dockerfile | awk -F ":" '{ print $(NF) })"
 
       - name: build-sign-scan
         uses: Cray-HPE/github-actions/build-sign-scan@main
