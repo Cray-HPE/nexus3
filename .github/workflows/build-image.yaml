@@ -75,7 +75,7 @@ jobs:
         id: tag
         shell: bash
         run: |
-          echo "::set-output name=tags::$(grep -i -E '^FROM .+:.+' .//Dockerfile | awk -F ":" '{ print $(NF) })"
+          echo "::set-output name=tags::$(grep -i -E '^FROM .+:.+' ./nexus3/Dockerfile | awk -F ":" '{ print $(NF) })"
 
       - name: build-sign-scan
         uses: Cray-HPE/github-actions/build-sign-scan@main
