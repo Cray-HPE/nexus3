@@ -75,6 +75,7 @@ jobs:
         id: tag
         shell: bash
         run: |
+          echo "$(ls)"
           echo "::set-output name=tags::$(grep -i -E '^FROM .+:.+' ./nexus3/Dockerfile | awk -F ":" '{ print $(NF) })"
 
       - name: build-sign-scan
